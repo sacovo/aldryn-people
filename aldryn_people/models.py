@@ -23,7 +23,6 @@ from django.conf import settings
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
-from django.models import ForeignKey
 try:
     # Python>=2.7
     from importlib import import_module
@@ -429,7 +428,7 @@ class PeoplePlugin(CMSPlugin):
             related_name='%(app_label)s_%(class)s',
             parent_link=True,
         )
-    group = ForeignKey(
+    group = models.ForeignKey(
         Group, blank=True,
         help_text=_('Select and arrange specific groups, or, leave blank to '
                     'select all.')
