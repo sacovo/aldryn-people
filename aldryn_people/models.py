@@ -23,6 +23,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
+from django.models import ForeignKey
 try:
     # Python>=2.7
     from importlib import import_module
@@ -404,3 +405,59 @@ class PeoplePlugin(BasePeoplePlugin):
 
     class Meta:
         abstract = False
+
+class PeoplePlugin(CMSPlugin):
+    STYLE_CHOICES = [
+        ('standard', _('Standard')),
+        ('feature', _('Feature'))
+    ] + get_additional_styles()
+
+    style = models.CharField(
+        _('Style'), choices=STYLE_CHOICES,
+        default=STYLE_CHOICES[0][0], max_length=50)
+
+    if LTE_DJANGO_1_6:
+        # related_name='%(app_label)s_%(class)s' does not work on  Django 1.6
+        cmsplugin_ptr = models.OneToOneField(
+            CMSPlugin,
+            related_name='+',
+            parent_link=True,
+        )
+    else:
+        cmsplugin_ptr = models.OneToOneField(
+            CMSPlugin,
+            related_name='%(app_label)s_%(class)s',
+            parent_link=True,
+        )
+    group = ForeignKey(
+        Group, blank=True,
+        help_text=_('Select and arrange specific groups, or, leave blank to '
+                    'select all.')
+    )
+
+    group_by_group = models.BooleanField(
+        verbose_name=_('group by group'),
+        default=True,
+        help_text=_('Group people by their group.')
+    )
+    show_ungrouped = models.BooleanField(
+        verbose_name=_('show ungrouped'),
+        default=False,
+        help_text=_('When using "group by group", show ungrouped people too.')
+    )
+    show_links = models.BooleanField(
+        verbose_name=_('Show links to Detail Page'), default=False)
+    show_vcard = models.BooleanField(
+        verbose_name=_('Show links to download vCard'), default=False)
+
+    class Meta:
+        abstract = False
+
+    def copy_relations(self, oldinstance):
+        self.group = oldinstance.group
+
+    def get_selected_people(self):
+        return self.group.people()
+
+    def __str__(self):
+        return text_type(self.pk)
